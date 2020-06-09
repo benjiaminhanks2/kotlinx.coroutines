@@ -81,7 +81,7 @@ private class PublisherAsFlow<T : Any>(
     }
 
     private suspend fun collectImpl(injectContext: CoroutineContext, collector: FlowCollector<T>) {
-        val subscriber = ReactiveSubscriber<T>(capacity, requestSize)
+        val subscriber = ReactiveSubscriber<T>(capacity, onBufferOverflow, requestSize)
         // inject subscribe context into publisher
         publisher.injectCoroutineContext(injectContext).subscribe(subscriber)
         try {
@@ -108,10 +108,11 @@ private class PublisherAsFlow<T : Any>(
 @Suppress("SubscriberImplementation")
 private class ReactiveSubscriber<T : Any>(
     capacity: Int,
+    onBufferOverflow: BufferOverflow,
     private val requestSize: Long
 ) : Subscriber<T> {
     private lateinit var subscription: Subscription
-    private val channel = Channel<T>(capacity)
+    private val channel = Channel<T>(capacity, onBufferOverflow)
 
     suspend fun takeNextOrNull(): T? = channel.receiveOrNull()
 
