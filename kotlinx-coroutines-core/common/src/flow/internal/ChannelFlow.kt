@@ -25,7 +25,7 @@ public interface FusibleFlow<T> : Flow<T> {
     /**
      * This function is called by [flowOn] (with context) and [buffer] (with capacity) operators
      * that are applied to this flow. Should not be used with [capacity] of [Channel.CONFLATED]
-     * (shall be desugared to `capacity = 1, onBufferOverflow = KEEP_LATEST`).
+     * (shall be desugared to `capacity = 0, onBufferOverflow = KEEP_LATEST`).
      */
     public fun fuse(
         context: CoroutineContext = EmptyCoroutineContext,
@@ -52,7 +52,7 @@ public abstract class ChannelFlow<T>(
     @JvmField public val onBufferOverflow: BufferOverflow
 ) : FusibleFlow<T> {
     init {
-        assert { capacity != Channel.CONFLATED } // CONFLATED must be desugared to 1, KEEP_LATEST by callers
+        assert { capacity != Channel.CONFLATED } // CONFLATED must be desugared to 0, KEEP_LATEST by callers
     }
 
     // shared code to create a suspend lambda from collectTo function in one place
@@ -62,8 +62,16 @@ public abstract class ChannelFlow<T>(
     private val produceCapacity: Int
         get() = if (capacity == Channel.OPTIONAL_CHANNEL) Channel.BUFFERED else capacity
 
+    /**
+     * When this [ChannelFlow] implementation can work without a channel (supports [Channel.OPTIONAL_CHANNEL]),
+     * then it should return non-null value from this function, so that a caller can used it without effect of
+     * additional [flowOn] and [buffer] operators by incorporating its
+     * [context], [capacity], and [onBufferOverflow] into its own implementation.
+     */
+    public open fun dropChannelOperators(): Flow<T>? = null
+
     public override fun fuse(context: CoroutineContext, capacity: Int, onBufferOverflow: BufferOverflow): Flow<T> {
-        assert { capacity != Channel.CONFLATED } // CONFLATED must be desugared to (1, KEEP_LATEST) by callers
+        assert { capacity != Channel.CONFLATED } // CONFLATED must be desugared to (0, KEEP_LATEST) by callers
         // note: previous upstream context (specified before) takes precedence
         val newContext = context + this.context
         val newCapacity: Int
@@ -142,7 +150,7 @@ public abstract class ChannelFlow<T>(
 
 // ChannelFlow implementation that operates on another flow before it
 internal abstract class ChannelFlowOperator<S, T>(
-    @JvmField val flow: Flow<S>,
+    @JvmField protected val flow: Flow<S>,
     context: CoroutineContext,
     capacity: Int,
     onBufferOverflow: BufferOverflow
@@ -192,6 +200,8 @@ internal class ChannelFlowOperatorImpl<T>(
 ) : ChannelFlowOperator<T, T>(flow, context, capacity, onBufferOverflow) {
     override fun create(context: CoroutineContext, capacity: Int, onBufferOverflow: BufferOverflow): ChannelFlow<T> =
         ChannelFlowOperatorImpl(flow, context, capacity, onBufferOverflow)
+
+    override fun dropChannelOperators(): Flow<T>? = flow
 
     override suspend fun flowCollect(collector: FlowCollector<T>) =
         flow.collect(collector)

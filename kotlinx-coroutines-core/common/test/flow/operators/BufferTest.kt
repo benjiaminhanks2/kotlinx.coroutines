@@ -11,7 +11,7 @@ import kotlin.test.*
 
 /**
  * A _behavioral_ test for buffering that is introduced by [buffer] operator to test that it is
- * implemented properly and that adjacent [buffer] calls are conflated properly.
+ * implemented properly and that adjacent [buffer] calls are fused properly.
  */
 class BufferTest : TestBase() {
     private val n = 200 // number of elements to emit for test
@@ -170,27 +170,6 @@ class BufferTest : TestBase() {
                 .flowOn(CoroutineName("Name")).buffer(4)
                 .flowOn(wrapperDispatcher()).buffer(5)
         }
-
-    @Test
-    fun testConflate() = runTest {
-        expect(1)
-        // emit all and conflate / then collect first & last
-        flow {
-            repeat(n) { i ->
-                expect(i + 2)
-                emit(i)
-            }
-        }
-            .buffer(Channel.CONFLATED)
-            .collect { i ->
-                when (i) {
-                    0 -> expect(n + 2) // first value
-                    n - 1 -> expect(n + 3) // last value
-                    else -> error("Unexpected $i")
-                }
-            }
-        finish(n + 4)
-    }
 
     @Test
     fun testCancellation() = runTest {

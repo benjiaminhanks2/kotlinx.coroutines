@@ -1062,11 +1062,10 @@ public abstract interface class kotlinx/coroutines/flow/SharingStarted {
 }
 
 public final class kotlinx/coroutines/flow/SharingStarted$Companion {
-	public final fun WhileSubscribed (JJ)Lkotlinx/coroutines/flow/SharingStarted;
-	public static synthetic fun WhileSubscribed$default (Lkotlinx/coroutines/flow/SharingStarted$Companion;JJILjava/lang/Object;)Lkotlinx/coroutines/flow/SharingStarted;
 	public final fun getEagerly ()Lkotlinx/coroutines/flow/SharingStarted;
 	public final fun getLazily ()Lkotlinx/coroutines/flow/SharingStarted;
-	public final fun getWhileSubscribed ()Lkotlinx/coroutines/flow/SharingStarted;
+	public final fun whileSubscribed (JJ)Lkotlinx/coroutines/flow/SharingStarted;
+	public static synthetic fun whileSubscribed$default (Lkotlinx/coroutines/flow/SharingStarted$Companion;JJILjava/lang/Object;)Lkotlinx/coroutines/flow/SharingStarted;
 }
 
 public abstract interface class kotlinx/coroutines/flow/StateFlow : kotlinx/coroutines/flow/SharedFlow {
@@ -1087,6 +1086,7 @@ public abstract class kotlinx/coroutines/flow/internal/ChannelFlow : kotlinx/cor
 	public fun collect (Lkotlinx/coroutines/flow/FlowCollector;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	protected abstract fun collectTo (Lkotlinx/coroutines/channels/ProducerScope;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	protected abstract fun create (Lkotlin/coroutines/CoroutineContext;ILkotlinx/coroutines/channels/BufferOverflow;)Lkotlinx/coroutines/flow/internal/ChannelFlow;
+	public fun dropChannelOperators ()Lkotlinx/coroutines/flow/Flow;
 	public fun fuse (Lkotlin/coroutines/CoroutineContext;ILkotlinx/coroutines/channels/BufferOverflow;)Lkotlinx/coroutines/flow/Flow;
 	public fun produceImpl (Lkotlinx/coroutines/CoroutineScope;)Lkotlinx/coroutines/channels/ReceiveChannel;
 	public fun toString ()Ljava/lang/String;

@@ -42,8 +42,6 @@ class ChannelFactoryTest : TestBase() {
     
     @Test
     fun testUnsupportedBufferOverflow() {
-        assertFailsWith<IllegalArgumentException> { Channel<Int>(Channel.RENDEZVOUS, BufferOverflow.KEEP_LATEST) }
-        assertFailsWith<IllegalArgumentException> { Channel<Int>(Channel.RENDEZVOUS, BufferOverflow.DROP_LATEST) }
         assertFailsWith<IllegalArgumentException> { Channel<Int>(Channel.CONFLATED, BufferOverflow.KEEP_LATEST) }
         assertFailsWith<IllegalArgumentException> { Channel<Int>(Channel.CONFLATED, BufferOverflow.DROP_LATEST) }
     }

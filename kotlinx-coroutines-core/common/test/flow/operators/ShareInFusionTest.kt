@@ -31,4 +31,26 @@ class ShareInFusionTest : TestBase() {
         assertEquals("OK", flow.shareIn(this, 1).first())
         coroutineContext.cancelChildren()
     }
+
+    /**
+     * Tests that `channelFlow { ... }.buffer(x)` works according to [channelFlow] docs and subsequent
+     * application of [shareIn] does not leak upstream.
+     */
+    @Test
+    fun testChannelFlowBufferShareIn() = runTest {
+        expect(1)
+        val flow = channelFlow<Int> {
+            // send a batch of 10 elements using [offer]
+            for (i in 1..10) {
+                assertTrue(offer(i)) // offer must succeed, because buffer
+            }
+            send(0) // done
+        }.buffer(10) // request a buffer of 10
+        // ^^^^^^^^^ buffer stays here
+        val shared = flow.shareIn(this, 0)
+        shared
+            .takeWhile { it > 0 }
+            .collect { i -> expect(i + 1) }
+        finish(12)
+    }
 }

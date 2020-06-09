@@ -56,13 +56,19 @@ class ShareInBufferTest : TestBase() {
 
     @Test
     fun testReplay1DefaultBuffer() =
-        checkBuffer(defaultBufferSize + 1) {
+        checkBuffer(defaultBufferSize) {
             shareIn(it, 1) 
         }
 
-    @Test
+    @Test // buffer is padded to default size as needed
+    fun testReplay10DefaultBuffer() =
+        checkBuffer(maxOf(10, defaultBufferSize)) {
+            shareIn(it, 10)
+        }
+
+    @Test // buffer is padded to default size as needed
     fun testReplay100DefaultBuffer() =
-        checkBuffer(defaultBufferSize + 100) {
+        checkBuffer( maxOf(100, defaultBufferSize)) {
             shareIn(it, 100)
         }
 
@@ -84,7 +90,7 @@ class ShareInBufferTest : TestBase() {
             buffer(10).shareIn(it, 0)
         }
                                          
-    @Test
+    @Test // buffer and replay sizes add up
     fun testBufferReplaySum() =
         checkBuffer(41) {
             buffer(10).buffer(20).shareIn(it, 11)

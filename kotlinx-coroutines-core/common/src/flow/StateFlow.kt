@@ -372,6 +372,8 @@ internal fun <T> StateFlow<T>.fuseStateFlow(
 ): Flow<T> {
     // state flow is always conflated so additional conflation does not have effect
     assert { capacity != Channel.CONFLATED } // should be desugared by callers
-    if (capacity == 1 && onBufferOverflow == BufferOverflow.KEEP_LATEST) return this
+    if ((capacity in 0..1 || capacity == Channel.BUFFERED) && onBufferOverflow == BufferOverflow.KEEP_LATEST) {
+        return this
+    }
     return fuseSharedFlow(context, capacity, onBufferOverflow)
 }

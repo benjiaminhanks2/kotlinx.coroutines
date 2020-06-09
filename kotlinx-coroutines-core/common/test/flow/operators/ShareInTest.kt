@@ -40,7 +40,7 @@ class ShareInTest : TestBase() {
             emit("DONE")
         }
         val sharingJob = Job()
-        val shared = flow.shareIn(this + sharingJob, replay, started = SharingStarted.Lazily)
+        val shared = flow.shareIn(this + sharingJob, replay, started = SharingStarted.lazily)
         yield() // should not start sharing
         // first subscriber gets Ok, other subscribers miss "OK"
         val n = 10
@@ -89,7 +89,7 @@ class ShareInTest : TestBase() {
             }
         }
         val sharingJob = Job()
-        val shared = flow.shareIn(this + sharingJob, 0, started = SharingStarted.WhileSubscribed)
+        val shared = flow.shareIn(this + sharingJob, 0, started = SharingStarted.whileSubscribed())
         repeat(3) { // repeat scenario 3 times
             yield()
             assertFalse(flowState.started) // flow is not running even if we yield

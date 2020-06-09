@@ -130,6 +130,9 @@ private class ChannelAsFlow<T>(
     override fun create(context: CoroutineContext, capacity: Int, onBufferOverflow: BufferOverflow): ChannelFlow<T> =
         ChannelAsFlow(channel, consume, context, capacity, onBufferOverflow)
 
+    override fun dropChannelOperators(): Flow<T>? =
+        ChannelAsFlow(channel, consume)
+
     override suspend fun collectTo(scope: ProducerScope<T>) =
         SendingCollector(scope).emitAllImpl(channel, consume) // use efficient channel receiving code from emitAll
 

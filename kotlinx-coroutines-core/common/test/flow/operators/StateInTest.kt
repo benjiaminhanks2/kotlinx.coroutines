@@ -22,6 +22,9 @@ class StateInTest : TestBase() {
         assertSame(state, (state as Flow<*>).conflate())
         assertSame(state, state.buffer(Channel.CONFLATED))
         assertSame(state, state.buffer(Channel.RENDEZVOUS))
+        assertSame(state, state.buffer(onBufferOverflow = BufferOverflow.KEEP_LATEST))
+        assertSame(state, state.buffer(0, onBufferOverflow = BufferOverflow.KEEP_LATEST))
+        assertSame(state, state.buffer(1, onBufferOverflow = BufferOverflow.KEEP_LATEST))
         coroutineContext.cancelChildren()
     }
 }

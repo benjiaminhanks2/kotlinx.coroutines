@@ -75,6 +75,7 @@ import kotlin.jvm.*
  * case, on buffer overflow the latest emitted value is either kept with [KEEP_LATEST][BufferOverflow.KEEP_LATEST]
  * strategy, dropping the oldest value in buffer, or the latest emitted is dropped with
  * [DROP_LATEST][BufferOverflow.DROP_LATEST] strategy, keeping the oldest value in buffer.
+ * To implement either of the custom strategies, the buffer of at least one element is used.
  *
  * ### Operator fusion
  *
@@ -109,7 +110,7 @@ import kotlin.jvm.*
  * ### Conflation
  *
  * Usage of this function with [capacity] of [Channel.CONFLATED][Channel.CONFLATED] is a shortcut to
- * `buffer(1, BufferOverflow.KEEP_LATEST)` and is available via
+ * `buffer(onBufferOverflow = `[`BufferOverflow.KEEP_LATEST`][BufferOverflow.KEEP_LATEST]`)` and is available via
  * a separate [conflate] operator. See its documentation for details.
  *
  * @param capacity type/capacity of the buffer between coroutines. Allowed values are the same as in `Channel(...)`
@@ -117,21 +118,22 @@ import kotlin.jvm.*
  *   [RENDEZVOUS][Channel.RENDEZVOUS], [UNLIMITED][Channel.UNLIMITED] or a non-negative value indicating
  *   an explicitly requested size.
  * @param onBufferOverflow configures an action on buffer overflow (optional, defaults to
- *   [SUSPEND][BufferOverflow.SUSPEND], supported only when `capacity > 0` or `capacity = Channel.BUFFERED`).
+ *   [SUSPEND][BufferOverflow.SUSPEND], supported only when `capacity >= 0` or `capacity = Channel.BUFFERED`,
+ *   implicitly creates a channel with at least one buffered element).
  */
 @Suppress("NAME_SHADOWING")
 public fun <T> Flow<T>.buffer(capacity: Int = BUFFERED, onBufferOverflow: BufferOverflow = BufferOverflow.SUSPEND): Flow<T> {
     require(capacity >= 0 || capacity == BUFFERED || capacity == CONFLATED) {
         "Buffer size should be non-negative, BUFFERED, or CONFLATED, but was $capacity"
     }
-    require((capacity != RENDEZVOUS && capacity != CONFLATED) || onBufferOverflow == BufferOverflow.SUSPEND) {
-        "RENDEZVOUS or CONFLATED capacity cannot be used with non-default onBufferOverflow"
+    require(capacity != CONFLATED || onBufferOverflow == BufferOverflow.SUSPEND) {
+        "CONFLATED capacity cannot be used with non-default onBufferOverflow"
     }
-    // desugar CONFLATED capacity to (1, KEEP_LATEST)
+    // desugar CONFLATED capacity to (0, KEEP_LATEST)
     var capacity = capacity
     var onBufferOverflow = onBufferOverflow
     if (capacity == CONFLATED) {
-        capacity = 1
+        capacity = 0
         onBufferOverflow = BufferOverflow.KEEP_LATEST
     }
     // create a flow
@@ -169,8 +171,8 @@ public fun <T> Flow<T>.buffer(capacity: Int = BUFFERED): Flow<T> = buffer(capaci
  * ```
  *
  * Note that `conflate` operator is a shortcut for [buffer] with `capacity` of [Channel.CONFLATED][Channel.CONFLATED],
- * with is, in turn, a shortcut to a single-element buffer that only keeps the latest element as
- * created by `buffer(1, `[`BufferOverflow.KEEP_LATEST`][BufferOverflow.KEEP_LATEST]`)`.
+ * with is, in turn, a shortcut to a buffer that only keeps the latest element as
+ * created by `buffer(onBufferOverflow = `[`BufferOverflow.KEEP_LATEST`][BufferOverflow.KEEP_LATEST]`)`.
  *
  * ### Operator fusion
  *

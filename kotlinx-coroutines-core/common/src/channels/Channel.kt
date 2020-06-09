@@ -520,8 +520,9 @@ public interface ChannelIterator<out E> {
  *   A channel with `capacity = 1` and `onBufferOverflow = KEEP_LATEST` is a _conflated_ channel.
  * * [DROP_LATEST][BufferOverflow.DROP_LATEST] &mdash; does not suspend the send, drops the latest value, keeps the oldest one.
  *
- * A non-default `onBufferOverflow` value cannot be specified for rendezvous and conflated channels and is ignored for a
- * channel with unlimited buffer.
+ * A non-default `onBufferOverflow` implicitly creates a channel with at least one buffered element and
+ * is ignored for a channel with unlimited buffer. It cannot be specified for `capacity = CONFLATED`, which
+ * is a shortcut by itself.
  */
 public interface Channel<E> : SendChannel<E>, ReceiveChannel<E> {
     /**
@@ -540,14 +541,15 @@ public interface Channel<E> : SendChannel<E>, ReceiveChannel<E> {
 
         /**
          * Requests a conflated channel in the `Channel(...)` factory function. This is a shortcut to creating
-         * a channel with `capacity = 1` and [`onBufferOverflow = KEEP_LATEST`][BufferOverflow.KEEP_LATEST].
+         * a channel with [`onBufferOverflow = KEEP_LATEST`][BufferOverflow.KEEP_LATEST].
          */
         public const val CONFLATED: Int = -1
 
         /**
          * Requests a buffered channel with the default buffer capacity in the `Channel(...)` factory function.
-         * The default capacity is 64 and can be overridden by setting
-         * [DEFAULT_BUFFER_PROPERTY_NAME] on JVM.
+         * The default capacity for a channel that [suspends][BufferOverflow.SUSPEND] on overflow
+         * is 64 and can be overridden by setting [DEFAULT_BUFFER_PROPERTY_NAME] on JVM.
+         * For non-suspending channel a buffer of capacity 1 is used.
          */
         public const val BUFFERED: Int = -2
 
@@ -573,16 +575,17 @@ public interface Channel<E> : SendChannel<E>, ReceiveChannel<E> {
  * @param capacity either a positive channel capacity or one of the constants defined in [Channel.Factory].
  * @param onBufferOverflow configures an action on buffer overflow (optional, defaults to
  *   [suspending][BufferOverflow.SUSPEND] attempt to [send][Channel.send] a value,
- *   supported only when `capacity > 0` or `capacity = Channel.BUFFERED`).
+ *   supported only when `capacity >= 0` or `capacity = Channel.BUFFERED`,
+ *   implicitly creates a channel with at least one buffered element).
  * @throws IllegalArgumentException when [capacity] < -2
  */
 public fun <E> Channel(capacity: Int = RENDEZVOUS, onBufferOverflow: BufferOverflow = BufferOverflow.SUSPEND): Channel<E> =
     when (capacity) {
         RENDEZVOUS -> {
-            require(onBufferOverflow == BufferOverflow.SUSPEND) {
-                "RENDEZVOUS capacity cannot be used with non-default onBufferOverflow"
-            }
-            RendezvousChannel()
+            if (onBufferOverflow == BufferOverflow.SUSPEND)
+                RendezvousChannel() // an efficient implementation of rendezvous channel
+            else
+                ArrayChannel(1, onBufferOverflow) // support buffer overflow with buffered channel
         }
         CONFLATED -> {
             require(onBufferOverflow == BufferOverflow.SUSPEND) {
@@ -591,10 +594,12 @@ public fun <E> Channel(capacity: Int = RENDEZVOUS, onBufferOverflow: BufferOverf
             ConflatedChannel()
         }
         UNLIMITED -> LinkedListChannel() // ignores onBufferOverflow: it has buffer, but it never overflows
-        BUFFERED -> ArrayChannel(CHANNEL_DEFAULT_CAPACITY, onBufferOverflow)
+        BUFFERED -> ArrayChannel( // uses default capacity with SUSPEND
+            if (onBufferOverflow == BufferOverflow.SUSPEND) CHANNEL_DEFAULT_CAPACITY else 1, onBufferOverflow
+        )
         else -> {
             if (capacity == 1 && onBufferOverflow == BufferOverflow.KEEP_LATEST)
-                ConflatedChannel() // this implementation is more efficient but appear to work in the same way
+                ConflatedChannel() // conflated implementation is more efficient but appears to work in the same way
             else
                 ArrayChannel(capacity, onBufferOverflow)
         }

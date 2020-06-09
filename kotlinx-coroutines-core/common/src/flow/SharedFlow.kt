@@ -644,12 +644,10 @@ internal fun <T> SharedFlow<T>.fuseSharedFlow(
     onBufferOverflow: BufferOverflow
 ): Flow<T> {
     // context is irrelevant for shared flow and making additional rendezvous is meaningless
-    // however, additional buffering after shared flow could make sense for very slow subscribers
-    return when (capacity) {
-        Channel.RENDEZVOUS, Channel.OPTIONAL_CHANNEL -> {
-            assert { onBufferOverflow == BufferOverflow.SUSPEND } // can only have a default value
-            this
-        }
-        else -> ChannelFlowOperatorImpl(this, context, capacity, onBufferOverflow)
+    // however, additional non-trivial buffering after shared flow could make sense for very slow subscribers
+    if ((capacity == Channel.RENDEZVOUS || capacity == Channel.OPTIONAL_CHANNEL) && onBufferOverflow == BufferOverflow.SUSPEND) {
+        return this
     }
+    // Apply channel flow operator as usual
+    return ChannelFlowOperatorImpl(this, context, capacity, onBufferOverflow)
 }
