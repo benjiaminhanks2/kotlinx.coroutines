@@ -31,6 +31,22 @@ public enum class SharingCommand {
 
 /**
  * A strategy for starting and stopping sharing coroutine in [shareIn] and [stateIn] operators.
+ *
+ * This interface provides a set of built-in strategies: [Eagerly], [Lazily], [WhileSubscribed], and
+ * supports custom strategies by implementing this interface's [command] function.
+ *
+ * For example, it is possible to define a custom strategy that starts upstream only when the number
+ * of subscribers exceeds the given `threshold` and make it an extension on [SharingStarted.Companion] so
+ * that it looks like a built-in strategy on the use-site:
+ *
+ * ```
+ * fun SharingStarted.Companion.WhileSubscribedAtLeast(threshold: Int): SharingStarted =
+ *     object : SharingStarted {
+ *         override fun command(subscriptionCount: StateFlow<Int>): Flow<SharingCommand> =
+ *             subscriptionCount
+ *                 .map { if (it >= threshold) SharingCommand.START else SharingCommand.STOP }
+ *     }
+ * ```
  */
 @ExperimentalCoroutinesApi
 public interface SharingStarted {
@@ -39,13 +55,13 @@ public interface SharingStarted {
          * Sharing is started immediately and never stops.
          */
         @ExperimentalCoroutinesApi
-        public val eagerly: SharingStarted = StartedEagerly() // always init because it is a default, likely needed
+        public val Eagerly: SharingStarted = StartedEagerly() // always init because it is a default, likely needed
 
         /**
          * Sharing is started when the first subscriber appears and never stops.
          */
         @ExperimentalCoroutinesApi
-        public val lazily: SharingStarted by lazy { StartedLazily() }
+        public val Lazily: SharingStarted by lazy { StartedLazily() }
 
         /**
          * Sharing is started when the first subscriber appears, immediately stops when the last
@@ -64,7 +80,7 @@ public interface SharingStarted {
          */
         @Suppress("FunctionName")
         @ExperimentalCoroutinesApi
-        public fun whileSubscribed(stopTimeoutMillis: Long = 0, replayExpirationMillis: Long = Long.MAX_VALUE): SharingStarted =
+        public fun WhileSubscribed(stopTimeoutMillis: Long = 0, replayExpirationMillis: Long = Long.MAX_VALUE): SharingStarted =
             StartedWhileSubscribed(stopTimeoutMillis, replayExpirationMillis)
     }
 
@@ -72,19 +88,19 @@ public interface SharingStarted {
      * Transforms the [subscriptionCount][MutableSharedFlow.subscriptionCount] state of the shared flow into the
      * flow of [commands][SharingCommand] that control sharing coroutine.
      */
-    public fun commandFlow(subscriptionCount: StateFlow<Int>): Flow<SharingCommand>
+    public fun command(subscriptionCount: StateFlow<Int>): Flow<SharingCommand>
 }
 
 // -------------------------------- implementation --------------------------------
 
 private class StartedEagerly : SharingStarted {
     private val alwaysStarted = unsafeDistinctFlow { emit(SharingCommand.START) }
-    override fun commandFlow(subscriptionCount: StateFlow<Int>): Flow<SharingCommand> = alwaysStarted
+    override fun command(subscriptionCount: StateFlow<Int>): Flow<SharingCommand> = alwaysStarted
     override fun toString(): String = "SharingStarted.Eagerly"
 }
 
 private class StartedLazily : SharingStarted {
-    override fun commandFlow(subscriptionCount: StateFlow<Int>): Flow<SharingCommand> = unsafeDistinctFlow {
+    override fun command(subscriptionCount: StateFlow<Int>): Flow<SharingCommand> = unsafeDistinctFlow {
         var started = false
         subscriptionCount.collect { count ->
             if (count > 0 && !started) {
@@ -106,7 +122,7 @@ private class StartedWhileSubscribed(
         require(replayExpiration >= 0) { "replayExpiration($replayExpiration) cannot be negative" }
     }
 
-    override fun commandFlow(subscriptionCount: StateFlow<Int>): Flow<SharingCommand> = subscriptionCount
+    override fun command(subscriptionCount: StateFlow<Int>): Flow<SharingCommand> = subscriptionCount
         .transformLatest { count ->
             if (count > 0) {
                 emit(SharingCommand.START)

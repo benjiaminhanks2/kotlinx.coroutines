@@ -40,7 +40,7 @@ class ShareInTest : TestBase() {
             emit("DONE")
         }
         val sharingJob = Job()
-        val shared = flow.shareIn(this + sharingJob, replay, started = SharingStarted.lazily)
+        val shared = flow.shareIn(this + sharingJob, replay, started = SharingStarted.Lazily)
         yield() // should not start sharing
         // first subscriber gets Ok, other subscribers miss "OK"
         val n = 10
@@ -78,50 +78,96 @@ class ShareInTest : TestBase() {
     }
 
     @Test
-    fun testWhileSubscribedBasic() = runTest {
+    fun testWhileSubscribedBasic() =
+        testWhileSubscribed(1, SharingStarted.WhileSubscribed())
+
+    @Test
+    fun testWhileSubscribedCustomAtLeast1() =
+        testWhileSubscribed(1, SharingStarted.WhileSubscribedAtLeast(1))
+
+    @Test
+    fun testWhileSubscribedCustomAtLeast2() =
+        testWhileSubscribed(2, SharingStarted.WhileSubscribedAtLeast(2))
+
+    @OptIn(ExperimentalStdlibApi::class)
+    private fun testWhileSubscribed(threshold: Int, started: SharingStarted) = runTest {
         expect(1)
         val flowState = FlowState()
-        val log = Channel<String>(10)
-        val flow = flow<String> {
-            flowState.track {
-                emit("OK")
-                delay(Long.MAX_VALUE) // await forever
+        val n = 3 // max number of subscribers
+        val log = Channel<String>(2 * n)
+
+        suspend fun checkStartTransition(subscribers: Int) {
+            when (subscribers) {
+                in 0 until threshold -> assertFalse(flowState.started)
+                threshold -> {
+                    flowState.awaitStart() // must eventually start the flow
+                    for (i in 1..threshold) {
+                        assertEquals("sub$i: OK", log.receive()) // threshold subs must receive the values
+                    }
+                }
+                in threshold + 1..n -> assertTrue(flowState.started)
             }
         }
-        val sharingJob = Job()
-        val shared = flow.shareIn(this + sharingJob, 0, started = SharingStarted.whileSubscribed())
-        repeat(3) { // repeat scenario 3 times
+
+        suspend fun checkStopTransition(subscribers: Int) {
+            when (subscribers) {
+                in threshold + 1..n -> assertTrue(flowState.started)
+                threshold - 1 -> flowState.awaitStop() // upstream flow must be eventually stopped
+                in 0..threshold - 2 -> assertFalse(flowState.started) // should have stopped already
+            }
+        }
+
+        val flow = flow {
+            flowState.track {
+                emit("OK")
+                delay(Long.MAX_VALUE) // await forever, will get cancelled
+            }
+        }
+        
+        val shared = flow.shareIn(this, 0, started = started)
+        repeat(5) { // repeat scenario a few times
             yield()
             assertFalse(flowState.started) // flow is not running even if we yield
-            val sub1 = shared
-                .onEach { value -> log.offer("sub1: $value") }
-                .onCompletion { log.offer("sub1: completion") }
-                .launchIn(this)
-            flowState.awaitStart() // must eventually start the flow
-            assertEquals("sub1: OK", log.receive()) // must receive the value
-            val sub2 = shared
-                .onEach { expectUnreached() }
-                .onCompletion { log.offer("sub2: completion") }
-                .launchIn(this)
-            assertTrue(flowState.started) // flow is still running
-            sub1.cancel() // cancel 1st subscriber
-            assertEquals("sub1: completion", log.receive()) // must eventually complete
-            assertTrue(flowState.started) // flow is still running
-            sub2.cancel() // cancel 2nd subscriber
-            assertEquals("sub2: completion", log.receive()) // must eventually complete
-            flowState.awaitStop() // upstream flow must be eventually stopped
+            // start 3 subscribers
+            val subs = ArrayList<Job>()
+            for (i in 1..n) {
+                subs += shared
+                    .onEach { value -> // only the first threshold subscribers get the value
+                        when (i) {
+                            in 1..threshold -> log.offer("sub$i: $value")
+                            else -> expectUnreached()
+                        }
+                    }
+                    .onCompletion { log.offer("sub$i: completion") }
+                    .launchIn(this)
+                checkStartTransition(i)
+            }
+            // now cancel all subscribers
+            for (i in 1..n) {
+                subs.removeFirst().cancel() // cancel subscriber
+                assertEquals("sub$i: completion", log.receive()) // subscriber shall shutdown
+                checkStopTransition(n - i)
+            }
         }
-        sharingJob.cancel() // cancel sharing job
+        coroutineContext.cancelChildren() // cancel sharing job
         finish(2)
     }
 
+    private fun SharingStarted.Companion.WhileSubscribedAtLeast(threshold: Int): SharingStarted =
+        object : SharingStarted {
+            override fun command(subscriptionCount: StateFlow<Int>): Flow<SharingCommand> =
+                subscriptionCount
+                    .map { if (it >= threshold) SharingCommand.START else SharingCommand.STOP }
+        }
+
     private class FlowState {
+        private val timeLimit = 10000L
         private val _started = MutableStateFlow(false)
         val started: Boolean get() = _started.value
         fun start() = check(_started.compareAndSet(expect = false, update = true))
         fun stop() = check(_started.compareAndSet(expect = true, update = false))
-        suspend fun awaitStart() = _started.first { it }
-        suspend fun awaitStop() = _started.first { !it }
+        suspend fun awaitStart() = withTimeout(timeLimit) { _started.first { it } }
+        suspend fun awaitStop() = withTimeout(timeLimit) { _started.first { !it } }
     }
 
     private suspend fun FlowState.track(block: suspend () -> Unit) {

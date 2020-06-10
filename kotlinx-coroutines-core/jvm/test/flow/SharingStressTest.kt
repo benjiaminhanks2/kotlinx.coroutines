@@ -29,40 +29,40 @@ class SharingStressTest : TestBase() {
 
     @Test
     public fun testNoReplayLazy() =
-        testStress(0, started = SharingStarted.lazily)
+        testStress(0, started = SharingStarted.Lazily)
 
     @Test
     public fun testNoReplayWhileSubscribed() =
-        testStress(0, started = SharingStarted.whileSubscribed())
+        testStress(0, started = SharingStarted.WhileSubscribed())
 
     @Test
     public fun testNoReplayWhileSubscribedTimeout() =
-        testStress(0, started = SharingStarted.whileSubscribed(stopTimeoutMillis = 50L))
+        testStress(0, started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 50L))
 
     @Test
     public fun testReplay100WhileSubscribed() =
-        testStress(100, started = SharingStarted.whileSubscribed())
+        testStress(100, started = SharingStarted.WhileSubscribed())
 
     @Test
     @Ignore // ignore until the future support for resetBuffer/replayExpirationMillis future is determined
     public fun testReplay100WhileSubscribedReset() =
-        testStress(100, started = SharingStarted.whileSubscribed(replayExpirationMillis = 0L))
+        testStress(100, started = SharingStarted.WhileSubscribed(replayExpirationMillis = 0L))
 
     @Test
     public fun testReplay100WhileSubscribedTimeout() =
-        testStress(100, started = SharingStarted.whileSubscribed(stopTimeoutMillis = 50L))
+        testStress(100, started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 50L))
 
     @Test
     public fun testStateLazy() =
-        testStress(1, started = SharingStarted.lazily)
+        testStress(1, started = SharingStarted.Lazily)
 
     @Test
     public fun testStateWhileSubscribed() =
-        testStress(1, started = SharingStarted.whileSubscribed())
+        testStress(1, started = SharingStarted.WhileSubscribed())
 
     @Test
     public fun testStateWhileSubscribedReset() =
-        testStress(1, started = SharingStarted.whileSubscribed(replayExpirationMillis = 0L))
+        testStress(1, started = SharingStarted.WhileSubscribed(replayExpirationMillis = 0L))
 
     private fun testStress(replay: Int, started: SharingStarted) = runTest {
         log("-- Stress with replay=$replay, started=$started")
