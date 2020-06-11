@@ -580,7 +580,7 @@ public final class kotlinx/coroutines/channels/BroadcastKt {
 
 public final class kotlinx/coroutines/channels/BufferOverflow : java/lang/Enum {
 	public static final field DROP_LATEST Lkotlinx/coroutines/channels/BufferOverflow;
-	public static final field KEEP_LATEST Lkotlinx/coroutines/channels/BufferOverflow;
+	public static final field DROP_OLDEST Lkotlinx/coroutines/channels/BufferOverflow;
 	public static final field SUSPEND Lkotlinx/coroutines/channels/BufferOverflow;
 	public static fun valueOf (Ljava/lang/String;)Lkotlinx/coroutines/channels/BufferOverflow;
 	public static fun values ()[Lkotlinx/coroutines/channels/BufferOverflow;
@@ -1058,14 +1058,14 @@ public final class kotlinx/coroutines/flow/SharingCommand : java/lang/Enum {
 
 public abstract interface class kotlinx/coroutines/flow/SharingStarted {
 	public static final field Companion Lkotlinx/coroutines/flow/SharingStarted$Companion;
-	public abstract fun commandFlow (Lkotlinx/coroutines/flow/StateFlow;)Lkotlinx/coroutines/flow/Flow;
+	public abstract fun command (Lkotlinx/coroutines/flow/StateFlow;)Lkotlinx/coroutines/flow/Flow;
 }
 
 public final class kotlinx/coroutines/flow/SharingStarted$Companion {
+	public final fun WhileSubscribed (JJ)Lkotlinx/coroutines/flow/SharingStarted;
+	public static synthetic fun WhileSubscribed$default (Lkotlinx/coroutines/flow/SharingStarted$Companion;JJILjava/lang/Object;)Lkotlinx/coroutines/flow/SharingStarted;
 	public final fun getEagerly ()Lkotlinx/coroutines/flow/SharingStarted;
 	public final fun getLazily ()Lkotlinx/coroutines/flow/SharingStarted;
-	public final fun whileSubscribed (JJ)Lkotlinx/coroutines/flow/SharingStarted;
-	public static synthetic fun whileSubscribed$default (Lkotlinx/coroutines/flow/SharingStarted$Companion;JJILjava/lang/Object;)Lkotlinx/coroutines/flow/SharingStarted;
 }
 
 public abstract interface class kotlinx/coroutines/flow/StateFlow : kotlinx/coroutines/flow/SharedFlow {

@@ -138,7 +138,7 @@ internal open class ArrayChannel<E>(
         return when (onBufferOverflow) {
             BufferOverflow.SUSPEND -> OFFER_FAILED
             BufferOverflow.DROP_LATEST -> OFFER_SUCCESS
-            BufferOverflow.KEEP_LATEST -> null // proceed, will drop oldest in enqueueElement
+            BufferOverflow.DROP_OLDEST -> null // proceed, will drop oldest in enqueueElement
         }
     }
 
@@ -149,7 +149,7 @@ internal open class ArrayChannel<E>(
             buffer[(head + currentSize) % buffer.size] = element // actually queue element
         } else {
             // buffer is full
-            assert { onBufferOverflow == BufferOverflow.KEEP_LATEST } // the only way we can get here
+            assert { onBufferOverflow == BufferOverflow.DROP_OLDEST } // the only way we can get here
             buffer[head % buffer.size] = null // drop oldest element
             buffer[(head + currentSize) % buffer.size] = element // actually queue element
             head = (head + 1) % buffer.size

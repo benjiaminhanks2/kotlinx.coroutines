@@ -18,14 +18,14 @@ class ChannelFactoryTest : TestBase() {
     @Test
     fun testLinkedListChannel() {
         assertTrue(Channel<Int>(Channel.UNLIMITED) is LinkedListChannel)
-        assertTrue(Channel<Int>(Channel.UNLIMITED, BufferOverflow.KEEP_LATEST) is LinkedListChannel)
+        assertTrue(Channel<Int>(Channel.UNLIMITED, BufferOverflow.DROP_OLDEST) is LinkedListChannel)
         assertTrue(Channel<Int>(Channel.UNLIMITED, BufferOverflow.DROP_LATEST) is LinkedListChannel)
     }
 
     @Test
     fun testConflatedChannel() {
         assertTrue(Channel<Int>(Channel.CONFLATED) is ConflatedChannel)
-        assertTrue(Channel<Int>(1, BufferOverflow.KEEP_LATEST) is ConflatedChannel)
+        assertTrue(Channel<Int>(1, BufferOverflow.DROP_OLDEST) is ConflatedChannel)
     }
 
     @Test
@@ -42,7 +42,7 @@ class ChannelFactoryTest : TestBase() {
     
     @Test
     fun testUnsupportedBufferOverflow() {
-        assertFailsWith<IllegalArgumentException> { Channel<Int>(Channel.CONFLATED, BufferOverflow.KEEP_LATEST) }
+        assertFailsWith<IllegalArgumentException> { Channel<Int>(Channel.CONFLATED, BufferOverflow.DROP_OLDEST) }
         assertFailsWith<IllegalArgumentException> { Channel<Int>(Channel.CONFLATED, BufferOverflow.DROP_LATEST) }
     }
 }

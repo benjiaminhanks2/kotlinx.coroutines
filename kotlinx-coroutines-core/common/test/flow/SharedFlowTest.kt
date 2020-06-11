@@ -568,12 +568,12 @@ class SharedFlowTest : TestBase() {
     }
 
     @Test
-    fun testDropLatest() = testKeepOrDropLatest(BufferOverflow.DROP_LATEST)
+    fun testDropLatest() = testDropLatestOrOldest(BufferOverflow.DROP_LATEST)
 
     @Test
-    fun testKeepLatest() = testKeepOrDropLatest(BufferOverflow.KEEP_LATEST)
+    fun testDropOldest() = testDropLatestOrOldest(BufferOverflow.DROP_OLDEST)
 
-    private fun testKeepOrDropLatest(bufferOverflow: BufferOverflow) = runTest {
+    private fun testDropLatestOrOldest(bufferOverflow: BufferOverflow) = runTest {
         reset()
         expect(1)
         val sh = MutableSharedFlow<Int?>(1, onBufferOverflow = bufferOverflow)
@@ -584,7 +584,7 @@ class SharedFlowTest : TestBase() {
         assertEquals(0, sh.subscriptionCount.value)
         // one collector
         val valueAfterOverflow = when (bufferOverflow) {
-            BufferOverflow.KEEP_LATEST -> 5
+            BufferOverflow.DROP_OLDEST -> 5
             BufferOverflow.DROP_LATEST -> 4
             else -> error("not supported in this test: $bufferOverflow")
         }
@@ -747,7 +747,7 @@ class SharedFlowTest : TestBase() {
         val expect = modelLog(stateFlow)
         val sharedFlow = MutableSharedFlow<Data?>(
             replay = 1,
-            onBufferOverflow = BufferOverflow.KEEP_LATEST,
+            onBufferOverflow = BufferOverflow.DROP_OLDEST,
             initialValue = null
         )
         val actual = modelLog(sharedFlow) { distinctUntilChanged() }
@@ -822,7 +822,7 @@ class SharedFlowTest : TestBase() {
         assertFailsWith<IllegalArgumentException> { MutableSharedFlow<Int>(-1) }
         assertFailsWith<IllegalArgumentException> { MutableSharedFlow<Int>(0, extraBufferCapacity = -1) }
         assertFailsWith<IllegalArgumentException> { MutableSharedFlow<Int>(0, onBufferOverflow = BufferOverflow.DROP_LATEST) }
-        assertFailsWith<IllegalArgumentException> { MutableSharedFlow<Int>(0, onBufferOverflow = BufferOverflow.KEEP_LATEST) }
+        assertFailsWith<IllegalArgumentException> { MutableSharedFlow<Int>(0, onBufferOverflow = BufferOverflow.DROP_OLDEST) }
         assertFailsWith<IllegalArgumentException> { MutableSharedFlow<Int>(0, initialValue = 0) }
         assertFailsWith<IllegalArgumentException> { MutableSharedFlow<Int>(0, extraBufferCapacity = 1, initialValue = 0) }
     }

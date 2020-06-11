@@ -11,7 +11,6 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.*
 import kotlinx.coroutines.channels.Channel.Factory.BUFFERED
 import kotlinx.coroutines.channels.Channel.Factory.CONFLATED
-import kotlinx.coroutines.channels.Channel.Factory.RENDEZVOUS
 import kotlinx.coroutines.flow.internal.*
 import kotlin.coroutines.*
 import kotlin.jvm.*
@@ -72,7 +71,7 @@ import kotlin.jvm.*
  *
  * By default, emitter is suspended when buffer overflows to let collector catch up. This strategy can be
  * overridden with an optional [onBufferOverflow] parameter so that emitter is never suspended. In this
- * case, on buffer overflow the latest emitted value is either kept with [KEEP_LATEST][BufferOverflow.KEEP_LATEST]
+ * case, on buffer overflow the latest emitted value is either kept with [DROP_OLDEST][BufferOverflow.DROP_OLDEST]
  * strategy, dropping the oldest value in buffer, or the latest emitted is dropped with
  * [DROP_LATEST][BufferOverflow.DROP_LATEST] strategy, keeping the oldest value in buffer.
  * To implement either of the custom strategies, the buffer of at least one element is used.
@@ -110,7 +109,7 @@ import kotlin.jvm.*
  * ### Conflation
  *
  * Usage of this function with [capacity] of [Channel.CONFLATED][Channel.CONFLATED] is a shortcut to
- * `buffer(onBufferOverflow = `[`BufferOverflow.KEEP_LATEST`][BufferOverflow.KEEP_LATEST]`)` and is available via
+ * `buffer(onBufferOverflow = `[`BufferOverflow.DROP_OLDEST`][BufferOverflow.DROP_OLDEST]`)` and is available via
  * a separate [conflate] operator. See its documentation for details.
  *
  * @param capacity type/capacity of the buffer between coroutines. Allowed values are the same as in `Channel(...)`
@@ -129,12 +128,12 @@ public fun <T> Flow<T>.buffer(capacity: Int = BUFFERED, onBufferOverflow: Buffer
     require(capacity != CONFLATED || onBufferOverflow == BufferOverflow.SUSPEND) {
         "CONFLATED capacity cannot be used with non-default onBufferOverflow"
     }
-    // desugar CONFLATED capacity to (0, KEEP_LATEST)
+    // desugar CONFLATED capacity to (0, DROP_OLDEST)
     var capacity = capacity
     var onBufferOverflow = onBufferOverflow
     if (capacity == CONFLATED) {
         capacity = 0
-        onBufferOverflow = BufferOverflow.KEEP_LATEST
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
     }
     // create a flow
     return when (this) {
@@ -172,7 +171,7 @@ public fun <T> Flow<T>.buffer(capacity: Int = BUFFERED): Flow<T> = buffer(capaci
  *
  * Note that `conflate` operator is a shortcut for [buffer] with `capacity` of [Channel.CONFLATED][Channel.CONFLATED],
  * with is, in turn, a shortcut to a buffer that only keeps the latest element as
- * created by `buffer(onBufferOverflow = `[`BufferOverflow.KEEP_LATEST`][BufferOverflow.KEEP_LATEST]`)`.
+ * created by `buffer(onBufferOverflow = `[`BufferOverflow.DROP_OLDEST`][BufferOverflow.DROP_OLDEST]`)`.
  *
  * ### Operator fusion
  *

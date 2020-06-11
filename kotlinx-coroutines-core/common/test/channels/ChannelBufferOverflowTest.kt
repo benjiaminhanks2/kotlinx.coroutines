@@ -24,8 +24,8 @@ class ChannelBufferOverflowTest : TestBase() {
     }
 
     @Test
-    fun testKeepLatest() = runTest {
-        val c = Channel<Int>(2, BufferOverflow.KEEP_LATEST)
+    fun testDropOldest() = runTest {
+        val c = Channel<Int>(2, BufferOverflow.DROP_OLDEST)
         assertTrue(c.offer(1))
         assertTrue(c.offer(2))
         assertTrue(c.offer(3)) // overflows, keeps 2, 3

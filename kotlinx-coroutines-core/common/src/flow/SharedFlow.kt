@@ -137,7 +137,7 @@ public interface MutableSharedFlow<T> : SharedFlow<T>, FlowCollector<T> {
      * function will suspend until there is a buffer space available.
      *
      * A shared flow configured with [BufferOverflow] strategy other than [SUSPEND][BufferOverflow.SUSPEND]
-     * (either [KEEP_LATEST][BufferOverflow.KEEP_LATEST] or [DROP_LATEST][BufferOverflow.DROP_LATEST]) never
+     * (either [DROP_OLDEST][BufferOverflow.DROP_OLDEST] or [DROP_LATEST][BufferOverflow.DROP_LATEST]) never
      * suspends on [emit] and thus `tryEmit` to such a shared flow always returns `true`.
      */
     public fun tryEmit(value: T): Boolean
@@ -321,7 +321,7 @@ private class SharedFlowImpl<T>(
             when (onBufferOverflow) {
                 BufferOverflow.SUSPEND -> return false // will suspend
                 BufferOverflow.DROP_LATEST -> return true // just drop incoming
-                BufferOverflow.KEEP_LATEST -> {} // force enqueue & drop oldest instead
+                BufferOverflow.DROP_OLDEST -> {} // force enqueue & drop oldest instead
             }
         }
         enqueueLocked(value)

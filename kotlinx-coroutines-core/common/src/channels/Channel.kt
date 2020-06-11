@@ -516,8 +516,8 @@ public interface ChannelIterator<out E> {
  *
  * * [SUSPEND][BufferOverflow.SUSPEND] &mdash; the default, suspends send on buffer overflow until there is
  *   free space in the buffer.
- * * [KEEP_LATEST][BufferOverflow.KEEP_LATEST] &mdash; does not suspend the send, keeps the latest value, drops the oldest one.
- *   A channel with `capacity = 1` and `onBufferOverflow = KEEP_LATEST` is a _conflated_ channel.
+ * * [DROP_OLDEST][BufferOverflow.DROP_OLDEST] &mdash; does not suspend the send, keeps the latest value, drops the oldest one.
+ *   A channel with `capacity = 1` and `onBufferOverflow = DROP_OLDEST` is a _conflated_ channel.
  * * [DROP_LATEST][BufferOverflow.DROP_LATEST] &mdash; does not suspend the send, drops the latest value, keeps the oldest one.
  *
  * A non-default `onBufferOverflow` implicitly creates a channel with at least one buffered element and
@@ -541,7 +541,7 @@ public interface Channel<E> : SendChannel<E>, ReceiveChannel<E> {
 
         /**
          * Requests a conflated channel in the `Channel(...)` factory function. This is a shortcut to creating
-         * a channel with [`onBufferOverflow = KEEP_LATEST`][BufferOverflow.KEEP_LATEST].
+         * a channel with [`onBufferOverflow = DROP_OLDEST`][BufferOverflow.DROP_OLDEST].
          */
         public const val CONFLATED: Int = -1
 
@@ -598,7 +598,7 @@ public fun <E> Channel(capacity: Int = RENDEZVOUS, onBufferOverflow: BufferOverf
             if (onBufferOverflow == BufferOverflow.SUSPEND) CHANNEL_DEFAULT_CAPACITY else 1, onBufferOverflow
         )
         else -> {
-            if (capacity == 1 && onBufferOverflow == BufferOverflow.KEEP_LATEST)
+            if (capacity == 1 && onBufferOverflow == BufferOverflow.DROP_OLDEST)
                 ConflatedChannel() // conflated implementation is more efficient but appears to work in the same way
             else
                 ArrayChannel(capacity, onBufferOverflow)

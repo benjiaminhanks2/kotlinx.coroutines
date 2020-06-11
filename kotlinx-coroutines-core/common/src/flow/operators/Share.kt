@@ -93,7 +93,7 @@ import kotlin.jvm.*
  *   as emitter is suspended until all subscribers process the value. Note, that the value is still immediately
  *   discarded when there are no subscribers.
  * * `buffer(b).shareIn(scope, r)` &mdash; creates a [SharedFlow] with `replay = r` and `extraBufferCapacity = b`.
- * * `conflate().shareIn(scope, r)` &mdash; creates a [SharedFlow] with `replay = r`, `onBufferOverflow = KEEP_LATEST`,
+ * * `conflate().shareIn(scope, r)` &mdash; creates a [SharedFlow] with `replay = r`, `onBufferOverflow = DROP_OLDEST`,
  *   and `extraBufferCapacity = 1` when `replay == 0` to support this strategy.
  *
  * ### Operator fusion

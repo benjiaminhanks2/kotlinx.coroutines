@@ -17,7 +17,7 @@ class ShareInConflationTest : TestBase() {
 
     private fun checkConflation(
         bufferCapacity: Int,
-        onBufferOverflow: BufferOverflow = BufferOverflow.KEEP_LATEST,
+        onBufferOverflow: BufferOverflow = BufferOverflow.DROP_OLDEST,
         op: suspend Flow<Int>.(CoroutineScope) -> Flow<Int>
     ) = runTest {
         expect(1)
@@ -65,33 +65,33 @@ class ShareInConflationTest : TestBase() {
         }
 
     @Test
-    fun testBufferKeepLatestReplay1() =
+    fun testBufferDropOldestReplay1() =
         checkConflation(1) {
-            buffer(onBufferOverflow = BufferOverflow.KEEP_LATEST).shareIn(it, 1)
+            buffer(onBufferOverflow = BufferOverflow.DROP_OLDEST).shareIn(it, 1)
         }
 
     @Test
-    fun testBufferKeepLatestReplay0() =
+    fun testBufferDropOldestReplay0() =
         checkConflation(1) {
-            buffer(onBufferOverflow = BufferOverflow.KEEP_LATEST).shareIn(it, 0)
+            buffer(onBufferOverflow = BufferOverflow.DROP_OLDEST).shareIn(it, 0)
         }
 
     @Test
-    fun testBufferKeepLatestReplay10() =
+    fun testBufferDropOldestReplay10() =
         checkConflation(10) {
-            buffer(onBufferOverflow = BufferOverflow.KEEP_LATEST).shareIn(it, 10)
+            buffer(onBufferOverflow = BufferOverflow.DROP_OLDEST).shareIn(it, 10)
         }
 
     @Test
-    fun testBuffer20KeepLatestReplay0() =
+    fun testBuffer20DropOldestReplay0() =
         checkConflation(20) {
-            buffer(20, onBufferOverflow = BufferOverflow.KEEP_LATEST).shareIn(it, 0)
+            buffer(20, onBufferOverflow = BufferOverflow.DROP_OLDEST).shareIn(it, 0)
         }
 
     @Test
-    fun testBuffer7KeepLatestReplay11() =
+    fun testBuffer7DropOldestReplay11() =
         checkConflation(18) {
-            buffer(7, onBufferOverflow = BufferOverflow.KEEP_LATEST).shareIn(it, 11)
+            buffer(7, onBufferOverflow = BufferOverflow.DROP_OLDEST).shareIn(it, 11)
         }
 
     @Test // a preceding buffer() gets overridden by conflate()
@@ -100,10 +100,10 @@ class ShareInConflationTest : TestBase() {
             buffer(23).conflate().shareIn(it, 1)
         }
 
-    @Test // a preceding buffer() gets overridden by buffer(onBufferOverflow = BufferOverflow.KEEP_LATEST)
-    fun testBufferKeepLatestOverride() =
+    @Test // a preceding buffer() gets overridden by buffer(onBufferOverflow = BufferOverflow.DROP_OLDEST)
+    fun testBufferDropOldestOverride() =
         checkConflation(1) {
-            buffer(23).buffer(onBufferOverflow = BufferOverflow.KEEP_LATEST).shareIn(it, 1)
+            buffer(23).buffer(onBufferOverflow = BufferOverflow.DROP_OLDEST).shareIn(it, 1)
         }
 
     @Test

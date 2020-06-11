@@ -17,13 +17,13 @@ class BufferConflationTest : TestBase() {
 
     private fun checkConflate(
         capacity: Int,
-        onBufferOverflow: BufferOverflow = BufferOverflow.KEEP_LATEST,
+        onBufferOverflow: BufferOverflow = BufferOverflow.DROP_OLDEST,
         op: suspend Flow<Int>.() -> Flow<Int>
     ) = runTest {
         expect(1)
         // emit all and conflate / then collect first & last
         val expectedList = when (onBufferOverflow) {
-            BufferOverflow.KEEP_LATEST -> listOf(0) + (n - capacity until n).toList() // first item & capacity last ones
+            BufferOverflow.DROP_OLDEST -> listOf(0) + (n - capacity until n).toList() // first item & capacity last ones
             BufferOverflow.DROP_LATEST -> (0..capacity).toList() // first & capacity following ones
             else -> error("cannot happen")
         }
@@ -54,27 +54,27 @@ class BufferConflationTest : TestBase() {
         }
 
     @Test
-    fun testBufferKeepLatest() =
+    fun testBufferDropOldest() =
         checkConflate(1) {
-            buffer(onBufferOverflow = BufferOverflow.KEEP_LATEST)
+            buffer(onBufferOverflow = BufferOverflow.DROP_OLDEST)
         }
 
     @Test
-    fun testBuffer0KeepLatest() =
+    fun testBuffer0DropOldest() =
         checkConflate(1) {
-            buffer(0, onBufferOverflow = BufferOverflow.KEEP_LATEST)
+            buffer(0, onBufferOverflow = BufferOverflow.DROP_OLDEST)
         }
 
     @Test
-    fun testBuffer1KeepLatest() =
+    fun testBuffer1DropOldest() =
         checkConflate(1) {
-            buffer(1, onBufferOverflow = BufferOverflow.KEEP_LATEST)
+            buffer(1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
         }
 
     @Test
-    fun testBuffer10KeepLatest() =
+    fun testBuffer10DropOldest() =
         checkConflate(10) {
-            buffer(10, onBufferOverflow = BufferOverflow.KEEP_LATEST)
+            buffer(10, onBufferOverflow = BufferOverflow.DROP_OLDEST)
         }
 
     @Test
@@ -138,10 +138,10 @@ class BufferConflationTest : TestBase() {
         }
 
     @Test
-    fun testBuffer3KeepLatestOverrideBuffer8DropLatest() =
-        checkConflate(3, BufferOverflow.KEEP_LATEST) {
+    fun testBuffer3DropOldestOverrideBuffer8DropLatest() =
+        checkConflate(3, BufferOverflow.DROP_OLDEST) {
             buffer(8, onBufferOverflow = BufferOverflow.DROP_LATEST)
-            .buffer(3, BufferOverflow.KEEP_LATEST)
+            .buffer(3, BufferOverflow.DROP_OLDEST)
         }
 }
 

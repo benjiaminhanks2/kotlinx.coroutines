@@ -25,7 +25,7 @@ public interface FusibleFlow<T> : Flow<T> {
     /**
      * This function is called by [flowOn] (with context) and [buffer] (with capacity) operators
      * that are applied to this flow. Should not be used with [capacity] of [Channel.CONFLATED]
-     * (shall be desugared to `capacity = 0, onBufferOverflow = KEEP_LATEST`).
+     * (shall be desugared to `capacity = 0, onBufferOverflow = DROP_OLDEST`).
      */
     public fun fuse(
         context: CoroutineContext = EmptyCoroutineContext,
@@ -52,7 +52,7 @@ public abstract class ChannelFlow<T>(
     @JvmField public val onBufferOverflow: BufferOverflow
 ) : FusibleFlow<T> {
     init {
-        assert { capacity != Channel.CONFLATED } // CONFLATED must be desugared to 0, KEEP_LATEST by callers
+        assert { capacity != Channel.CONFLATED } // CONFLATED must be desugared to 0, DROP_OLDEST by callers
     }
 
     // shared code to create a suspend lambda from collectTo function in one place
@@ -71,7 +71,7 @@ public abstract class ChannelFlow<T>(
     public open fun dropChannelOperators(): Flow<T>? = null
 
     public override fun fuse(context: CoroutineContext, capacity: Int, onBufferOverflow: BufferOverflow): Flow<T> {
-        assert { capacity != Channel.CONFLATED } // CONFLATED must be desugared to (0, KEEP_LATEST) by callers
+        assert { capacity != Channel.CONFLATED } // CONFLATED must be desugared to (0, DROP_OLDEST) by callers
         // note: previous upstream context (specified before) takes precedence
         val newContext = context + this.context
         val newCapacity: Int
@@ -112,7 +112,7 @@ public abstract class ChannelFlow<T>(
     public open fun broadcastImpl(scope: CoroutineScope, start: CoroutineStart): BroadcastChannel<T> {
         val broadcastCapacity = when (onBufferOverflow) {
             BufferOverflow.SUSPEND -> produceCapacity
-            BufferOverflow.KEEP_LATEST -> Channel.CONFLATED
+            BufferOverflow.DROP_OLDEST -> Channel.CONFLATED
             BufferOverflow.DROP_LATEST ->
                 throw IllegalArgumentException("Broadcast channel does not support BufferOverflow.DROP_LATEST")
         }

@@ -75,7 +75,7 @@ import kotlin.native.concurrent.*
  * // MutableStateFlow(initialValue) is a shared flow with the following parameters:
  * MutableSharedFlow(
  *     replay = 1,
- *     onBufferOverflow = BufferOverflow.KEEP_LATEST,
+ *     onBufferOverflow = BufferOverflow.DROP_OLDEST,
  *     initialValue = initialValue
  * )
  * // apply .distinctUntilChanged() to get StateFlow-like behavior
@@ -372,7 +372,7 @@ internal fun <T> StateFlow<T>.fuseStateFlow(
 ): Flow<T> {
     // state flow is always conflated so additional conflation does not have effect
     assert { capacity != Channel.CONFLATED } // should be desugared by callers
-    if ((capacity in 0..1 || capacity == Channel.BUFFERED) && onBufferOverflow == BufferOverflow.KEEP_LATEST) {
+    if ((capacity in 0..1 || capacity == Channel.BUFFERED) && onBufferOverflow == BufferOverflow.DROP_OLDEST) {
         return this
     }
     return fuseSharedFlow(context, capacity, onBufferOverflow)
