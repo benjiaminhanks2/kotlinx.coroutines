@@ -123,6 +123,15 @@ public interface SharedFlow<out T> : Flow<T> {
  *
  * See [SharedFlow] documentation for details on shared flows.
  *
+ * `MutableSharedFlow` is a [SharedFlow] that also provides abilities to [emit] a value,
+ * to [tryEmit] without suspension if possible, to track the [subscriptionCount],
+ * and to [resetReplayCache] to its initial state.
+ *
+ * ### Concurrency
+ *
+ * All methods of shared flow are **thread-safe** and can be safely invoked from concurrent coroutines without
+ * external synchronization.
+ *
  * ### Not stable for inheritance
  *
  * **`MutableSharedFlow` interface is not stable for inheritance in 3rd party libraries**, as new methods
@@ -143,7 +152,21 @@ public interface MutableSharedFlow<T> : SharedFlow<T>, FlowCollector<T> {
     public fun tryEmit(value: T): Boolean
 
     /**
-     * A number of subscribers (active collectors) to this shared flow. 
+     * A number of subscribers (active collectors) to this shared flow.
+     *
+     * This state can be used to react to changes in the number of subscriptions to this shared flow.
+     * For example, if you need to call `onActive` function when the first subscriber appears and `onInactive`
+     * function when the last one disappears, you can set it up like this:
+     *
+     * ```
+     * sharedFlow.subscriptionCount
+     *     .map { count -> count > 0 } // map count into active/inactive flag
+     *     .distinctUntilChanged() // only react to true<->false changes
+     *     .onEach { isActive -> // configure an action
+     *         if (isActive) onActive() else onInactive()
+     *     }
+     *     .launchIn(scope) // launch it
+     * ```
      */
     public val subscriptionCount: StateFlow<Int>
 
