@@ -9,8 +9,6 @@
 package kotlinx.coroutines.flow
 
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.internal.*
-import kotlinx.coroutines.flow.internal.unsafeFlow
 import kotlin.coroutines.*
 import kotlin.jvm.*
 
@@ -430,3 +428,50 @@ public fun <T> Flow<T>.delayEach(timeMillis: Long): Flow<T> = onEach { delay(tim
     replaceWith = ReplaceWith("this.flatMapLatest(transform)")
 )
 public fun <T, R> Flow<T>.switchMap(transform: suspend (value: T) -> Flow<R>): Flow<R> = flatMapLatest(transform)
+
+@Deprecated(
+    level = DeprecationLevel.ERROR,
+    message = "Flow analogue of 'publish' is 'shareIn' operator. \n" +
+        "publish().connect() is the default strategy (no extra call is needed), \n" +
+        "publish().autoConnect() translates to 'started = SharingStared.Lazily' argument, \n" +
+        "publish().refCount() translates to 'started = SharingStared.WhileSubscribed()' argument.",
+    replaceWith = ReplaceWith("this.shareIn(scope, 0)")
+)
+public fun <T> Flow<T>.publish(): Flow<T> = noImpl()
+
+@Deprecated(
+    level = DeprecationLevel.ERROR,
+    message = "Flow analogue of 'publish(bufferSize)' is 'buffer' operator followed by 'shareIn'. \n" +
+        "publish().connect() is the default strategy (no extra call is needed), \n" +
+        "publish().autoConnect() translates to 'started = SharingStared.Lazily' argument, \n" +
+        "publish().refCount() translates to 'started = SharingStared.WhileSubscribed()' argument.",
+    replaceWith = ReplaceWith("this.buffer(bufferSize).shareIn(scope, 0)")
+)
+public fun <T> Flow<T>.publish(bufferSize: Int): Flow<T> = noImpl()
+
+@Deprecated(
+    level = DeprecationLevel.ERROR,
+    message = "Flow analogue of 'replay()' is 'shareIn' operator with unlimited replay. \n" +
+        "replay().connect() is the default strategy (no extra call is needed), \n" +
+        "replay().autoConnect() translates to 'started = SharingStared.Lazily' argument, \n" +
+        "replay().refCount() translates to 'started = SharingStared.WhileSubscribed()' argument.",
+    replaceWith = ReplaceWith("this.shareIn(scope, Int.MAX_VALUE)")
+)
+public fun <T> Flow<T>.replay(): Flow<T> = noImpl()
+
+@Deprecated(
+    level = DeprecationLevel.ERROR,
+    message = "Flow analogue of 'replay(bufferSize)' is 'shareIn' operator with the specified replay parameter. \n" +
+        "replay().connect() is the default strategy (no extra call is needed), \n" +
+        "replay().autoConnect() translates to 'started = SharingStared.Lazily' argument, \n" +
+        "replay().refCount() translates to 'started = SharingStared.WhileSubscribed()' argument.",
+    replaceWith = ReplaceWith("this.shareIn(scope, bufferSize)")
+)
+public fun <T> Flow<T>.replay(bufferSize: Int): Flow<T> = noImpl()
+
+@Deprecated(
+    level = DeprecationLevel.ERROR,
+    message = "Flow analogue of 'cache()' is 'shareIn' operator with unlimited replay and 'started = SharingStared.Lazily' argument'",
+    replaceWith = ReplaceWith("this.shareIn(scope, Int.MAX_VALUE, started = SharingStared.Lazily)")
+)
+public fun <T> Flow<T>.cache(): Flow<T> = noImpl()
