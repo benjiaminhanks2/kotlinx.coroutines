@@ -320,7 +320,7 @@ private class StateFlowImpl<T>(
         this.value = value
     }
 
-    override fun resetBuffer() {
+    override fun resetReplayCache() {
         updateState(null, initialState)
     }
 

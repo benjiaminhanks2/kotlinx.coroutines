@@ -44,8 +44,7 @@ class SharingStressTest : TestBase() {
         testStress(100, started = SharingStarted.WhileSubscribed())
 
     @Test
-    @Ignore // ignore until the future support for resetBuffer/replayExpirationMillis future is determined
-    public fun testReplay100WhileSubscribedReset() =
+    public fun testReplay100WhileSubscribedReset() =                             
         testStress(100, started = SharingStarted.WhileSubscribed(replayExpirationMillis = 0L))
 
     @Test

@@ -24,9 +24,9 @@ public enum class SharingCommand {
     STOP,
 
     /**
-     * Stop the sharing coroutine and [reset buffer][MutableSharedFlow.resetBuffer] of the shared flow.
+     * Stop the sharing coroutine and [resetReplayCache][MutableSharedFlow.resetReplayCache] of the shared flow.
      */
-    STOP_AND_RESET_BUFFER
+    STOP_AND_RESET_REPLAY_CACHE
 }
 
 /**
@@ -55,13 +55,13 @@ public interface SharingStarted {
          * Sharing is started immediately and never stops.
          */
         @ExperimentalCoroutinesApi
-        public val Eagerly: SharingStarted = StartedEagerly() // always init because it is a default, likely needed
+        public val Eagerly: SharingStarted = StartedEagerly()
 
         /**
          * Sharing is started when the first subscriber appears and never stops.
          */
         @ExperimentalCoroutinesApi
-        public val Lazily: SharingStarted by lazy { StartedLazily() }
+        public val Lazily: SharingStarted = StartedLazily()
 
         /**
          * Sharing is started when the first subscriber appears, immediately stops when the last
@@ -72,7 +72,7 @@ public interface SharingStarted {
          * * [stopTimeoutMillis] &mdash; configures a delay (in milliseconds) between disappearance of the last
          *   subscriber and stop of the sharing coroutine. It defaults to zero (stop immediately).
          * * [replayExpirationMillis] &mdash; configures a delay (in milliseconds) between stop of
-         *   the sharing coroutine and [buffer reset][MutableSharedFlow.resetBuffer].
+         *   the sharing coroutine and [buffer reset][MutableSharedFlow.resetReplayCache].
          *   It defaults to `Long.MAX_VALUE` (keep replay cache forever, never reset buffer)
          *
          * This function throws [IllegalArgumentException] when either [stopTimeoutMillis] or [replayExpirationMillis]
@@ -132,7 +132,7 @@ private class StartedWhileSubscribed(
                     emit(SharingCommand.STOP)
                     delay(replayExpiration)
                 }
-                emit(SharingCommand.STOP_AND_RESET_BUFFER)
+                emit(SharingCommand.STOP_AND_RESET_REPLAY_CACHE)
             }
         }
         .dropWhile { it != SharingCommand.START } // don't emit any STOP/RESET_BUFFER to start with, only START
@@ -144,6 +144,6 @@ private class StartedWhileSubscribed(
             if (stopTimeout > 0) add("stopTimeout=${stopTimeout}ms")
             if (replayExpiration < Long.MAX_VALUE) add("replayExpiration=${replayExpiration}ms")
         }
-        return "SharingStarted.whileSubscribed(${params.joinToString()})"
+        return "SharingStarted.WhileSubscribed(${params.joinToString()})"
     }
 }

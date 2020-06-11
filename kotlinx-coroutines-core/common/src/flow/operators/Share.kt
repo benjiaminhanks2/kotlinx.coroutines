@@ -188,11 +188,11 @@ private fun <T> CoroutineScope.launchSharing(
                     when (it) {
                         SharingCommand.START -> upstream.collect(shared) // can be cancelled
                         SharingCommand.STOP -> { /* just cancel and do nothing else */ }
-                        SharingCommand.STOP_AND_RESET_BUFFER -> shared.resetBuffer()
+                        SharingCommand.STOP_AND_RESET_REPLAY_CACHE -> shared.resetReplayCache()
                     }
                 }
         } finally {
-            shared.resetBuffer() // on any completion/cancellation/failure of sharing
+            shared.resetReplayCache() // on any completion/cancellation/failure of sharing
         }
     }
 }

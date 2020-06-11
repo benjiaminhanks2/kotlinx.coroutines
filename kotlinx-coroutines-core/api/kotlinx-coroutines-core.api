@@ -1029,7 +1029,7 @@ public final class kotlinx/coroutines/flow/LintKt {
 
 public abstract interface class kotlinx/coroutines/flow/MutableSharedFlow : kotlinx/coroutines/flow/FlowCollector, kotlinx/coroutines/flow/SharedFlow {
 	public abstract fun getSubscriptionCount ()Lkotlinx/coroutines/flow/StateFlow;
-	public abstract fun resetBuffer ()V
+	public abstract fun resetReplayCache ()V
 	public abstract fun tryEmit (Ljava/lang/Object;)Z
 }
 
@@ -1051,7 +1051,7 @@ public final class kotlinx/coroutines/flow/SharedFlowKt {
 public final class kotlinx/coroutines/flow/SharingCommand : java/lang/Enum {
 	public static final field START Lkotlinx/coroutines/flow/SharingCommand;
 	public static final field STOP Lkotlinx/coroutines/flow/SharingCommand;
-	public static final field STOP_AND_RESET_BUFFER Lkotlinx/coroutines/flow/SharingCommand;
+	public static final field STOP_AND_RESET_REPLAY_CACHE Lkotlinx/coroutines/flow/SharingCommand;
 	public static fun valueOf (Ljava/lang/String;)Lkotlinx/coroutines/flow/SharingCommand;
 	public static fun values ()[Lkotlinx/coroutines/flow/SharingCommand;
 }
