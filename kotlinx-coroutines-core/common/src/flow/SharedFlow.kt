@@ -649,7 +649,9 @@ private class SharedFlowImpl<T>(
                     // ...  move newly enqueued item at the end of the buffer by moving all queued items to the right
                     val buffer = buffer!!
                     for (i in queueSize downTo 1) {
-                        buffer.setBufferAt(newBufferEndIndex + i, buffer.getBufferAt(newBufferEndIndex + i - 1))
+                        val item = buffer.getBufferAt(newBufferEndIndex + i - 1)
+                        if (item is Emitter) item.index = newBufferEndIndex + i // correct its index
+                        buffer.setBufferAt(newBufferEndIndex + i, item)
                     }
                     buffer.setBufferAt(newBufferEndIndex, initialValue)
                 }
@@ -679,7 +681,7 @@ private class SharedFlowImpl<T>(
     
     private class Emitter(
         @JvmField val flow: SharedFlowImpl<*>,
-        @JvmField val index: Long,
+        @JvmField var index: Long,
         @JvmField val value: Any?,
         @JvmField val cont: Continuation<Unit>
     ) : DisposableHandle {

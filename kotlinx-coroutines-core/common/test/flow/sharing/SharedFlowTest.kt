@@ -9,6 +9,11 @@ import kotlinx.coroutines.channels.*
 import kotlin.random.*
 import kotlin.test.*
 
+/**
+ * This test suite contains some basic tests for [SharedFlow]. There are some scenarios here written
+ * using [expect] and they are not very readable. See [SharedFlowScenarioTest] for a better
+ * behavioral test-suit.
+ */
 class SharedFlowTest : TestBase() {
     @Test
     fun testRendezvousSharedFlowBasic() = runTest {

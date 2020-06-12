@@ -135,7 +135,7 @@ class SharingStartedTest : TestBase() {
         var expectedTime = 0L
 
         val dispatcher = coroutineContext[ContinuationInterceptor] as VirtualTimeDispatcher
-        val scope = CoroutineScope(dispatcher)
+        val scope = CoroutineScope(coroutineContext + Job())
 
         suspend fun launch() {
             started
