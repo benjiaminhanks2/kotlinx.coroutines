@@ -6,6 +6,7 @@ package kotlinx.coroutines.flow
 
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.internal.*
+import kotlin.time.*
 
 /**
  * A command emitted by [SharingStarted] implementation to control the sharing coroutine in
@@ -72,7 +73,7 @@ public interface SharingStarted {
          * * [stopTimeoutMillis] &mdash; configures a delay (in milliseconds) between disappearance of the last
          *   subscriber and stop of the sharing coroutine. It defaults to zero (stop immediately).
          * * [replayExpirationMillis] &mdash; configures a delay (in milliseconds) between stop of
-         *   the sharing coroutine and [buffer reset][MutableSharedFlow.resetReplayCache].
+         *   the sharing coroutine and [reset of replay cache][MutableSharedFlow.resetReplayCache].
          *   It defaults to `Long.MAX_VALUE` (keep replay cache forever, never reset buffer)
          *
          * This function throws [IllegalArgumentException] when either [stopTimeoutMillis] or [replayExpirationMillis]
@@ -80,7 +81,10 @@ public interface SharingStarted {
          */
         @Suppress("FunctionName")
         @ExperimentalCoroutinesApi
-        public fun WhileSubscribed(stopTimeoutMillis: Long = 0, replayExpirationMillis: Long = Long.MAX_VALUE): SharingStarted =
+        public fun WhileSubscribed(
+            stopTimeoutMillis: Long = 0,
+            replayExpirationMillis: Long = Long.MAX_VALUE
+        ): SharingStarted =
             StartedWhileSubscribed(stopTimeoutMillis, replayExpirationMillis)
     }
 
@@ -90,6 +94,30 @@ public interface SharingStarted {
      */
     public fun command(subscriptionCount: StateFlow<Int>): Flow<SharingCommand>
 }
+
+/**
+ * Sharing is started when the first subscriber appears, immediately stops when the last
+ * subscriber disappears (by default), keeping the replay cache forever (by default).
+ *
+ * It has the following optional parameters:
+ *
+ * * [stopTimeout] &mdash; configures a delay between disappearance of the last
+ *   subscriber and stop of the sharing coroutine. It defaults to zero (stop immediately).
+ * * [replayExpiration] &mdash; configures a delay between stop of
+ *   the sharing coroutine and [reset of replay cache][MutableSharedFlow.resetReplayCache].
+ *   It defaults to [Duration.INFINITE] (keep replay cache forever, never reset buffer)
+ *
+ * This function throws [IllegalArgumentException] when either [stopTimeout] or [replayExpiration]
+ * are negative.
+ */
+@Suppress("FunctionName")
+@ExperimentalTime
+@ExperimentalCoroutinesApi
+public fun SharingStarted.Companion.WhileSubscribed(
+    stopTimeout: Duration = Duration.ZERO,
+    replayExpiration: Duration = Duration.INFINITE
+): SharingStarted =
+    StartedWhileSubscribed(stopTimeout.toLongMilliseconds(), replayExpiration.toLongMilliseconds())
 
 // -------------------------------- implementation --------------------------------
 
@@ -118,8 +146,8 @@ private class StartedWhileSubscribed(
     private val replayExpiration: Long
 ) : SharingStarted {
     init {
-        require(stopTimeout >= 0) { "stopTimeout($stopTimeout) cannot be negative" }
-        require(replayExpiration >= 0) { "replayExpiration($replayExpiration) cannot be negative" }
+        require(stopTimeout >= 0) { "stopTimeout($stopTimeout ms) cannot be negative" }
+        require(replayExpiration >= 0) { "replayExpiration($replayExpiration ms) cannot be negative" }
     }
 
     override fun command(subscriptionCount: StateFlow<Int>): Flow<SharingCommand> = subscriptionCount
@@ -146,4 +174,12 @@ private class StartedWhileSubscribed(
         }
         return "SharingStarted.WhileSubscribed(${params.joinToString()})"
     }
+
+    // equals & hashcode to facilitate testing, not documented in public contract
+    override fun equals(other: Any?): Boolean =
+        other is StartedWhileSubscribed &&
+            stopTimeout == other.stopTimeout &&
+            replayExpiration == other.replayExpiration
+
+    override fun hashCode(): Int = stopTimeout.hashCode() * 13 + replayExpiration.hashCode()
 }

@@ -1073,6 +1073,11 @@ public final class kotlinx/coroutines/flow/SharingStarted$Companion {
 	public final fun getLazily ()Lkotlinx/coroutines/flow/SharingStarted;
 }
 
+public final class kotlinx/coroutines/flow/SharingStartedKt {
+	public static final fun WhileSubscribed-9tZugJw (Lkotlinx/coroutines/flow/SharingStarted$Companion;DD)Lkotlinx/coroutines/flow/SharingStarted;
+	public static synthetic fun WhileSubscribed-9tZugJw$default (Lkotlinx/coroutines/flow/SharingStarted$Companion;DDILjava/lang/Object;)Lkotlinx/coroutines/flow/SharingStarted;
+}
+
 public abstract interface class kotlinx/coroutines/flow/StateFlow : kotlinx/coroutines/flow/SharedFlow {
 	public abstract fun getValue ()Ljava/lang/Object;
 }
