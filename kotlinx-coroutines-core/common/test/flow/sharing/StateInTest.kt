@@ -27,4 +27,56 @@ class StateInTest : TestBase() {
         assertSame(state, state.buffer(1, onBufferOverflow = BufferOverflow.DROP_OLDEST))
         coroutineContext.cancelChildren()
     }
+
+    @Test
+    fun testUpstreamCompletedResetNoInitialValue() =
+        testUpstreamCompletedOrFailedReset(failed = false, iv = false)
+
+    @Test
+    fun testUpstreamFailedResetNoInitialValue() =
+        testUpstreamCompletedOrFailedReset(failed = true, iv = false)
+
+    @Test
+    fun testUpstreamCompletedResetInitialValue() =
+        testUpstreamCompletedOrFailedReset(failed = false, iv = true)
+
+    @Test
+    fun testUpstreamFailedResetInitialValue() =
+        testUpstreamCompletedOrFailedReset(failed = true, iv = true)
+
+    private fun testUpstreamCompletedOrFailedReset(failed: Boolean, iv: Boolean) = runTest {
+        val emitted = Job()
+        val terminate = Job()
+        val sharingJob = CompletableDeferred<Unit>()
+        val upstream = flow {
+            emit("OK")
+            emitted.complete()
+            terminate.join()
+            if (failed) throw TestException()
+        }
+        val scope = this + sharingJob
+        val shared: StateFlow<String?>
+        if (iv) {
+            shared = upstream.stateIn(scope, initialValue = null)
+            assertEquals(null, shared.value)
+        } else {
+            shared = upstream.stateIn(scope)
+            assertEquals("OK", shared.value) // waited until upstream emitted
+        }
+        emitted.join() // should start sharing, emit & cache
+        assertEquals("OK", shared.value)
+        terminate.complete()
+        sharingJob.complete(Unit)
+        sharingJob.join() // should complete sharing & reset cache
+        if (iv) {
+            assertEquals(null, shared.value)
+        } else {
+            assertEquals("OK", shared.value)
+        }
+        if (failed) {
+            assertTrue(sharingJob.getCompletionExceptionOrNull() is TestException)
+        } else {
+            assertNull(sharingJob.getCompletionExceptionOrNull())
+        }
+    }
 }

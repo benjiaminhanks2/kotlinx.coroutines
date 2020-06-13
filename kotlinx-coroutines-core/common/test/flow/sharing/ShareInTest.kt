@@ -10,7 +10,7 @@ import kotlin.test.*
 
 class ShareInTest : TestBase() {
     @Test
-    fun testZeroReplayEager() = runTest {
+    fun testReplay0Eager() = runTest {
         expect(1)
         val flow = flowOf("OK")
         val shared = flow.shareIn(this, 0)
@@ -25,12 +25,12 @@ class ShareInTest : TestBase() {
     }
 
     @Test
-    fun testZeroReplayLazy() = testZeroOneReplay(0)
+    fun testReplay0Lazy() = testReplayZeroOrOne(0)
 
     @Test
-    fun tesOneReplayLazy() = testZeroOneReplay(1)
+    fun testReplay1Lazy() = testReplayZeroOrOne(1)
 
-    private fun testZeroOneReplay(replay: Int) = runTest {
+    private fun testReplayZeroOrOne(replay: Int) = runTest {
         expect(1)
         val doneBarrier = Job()
         val flow = flow {
@@ -75,6 +75,39 @@ class ShareInTest : TestBase() {
         expect(4 + n + replayOfs)
         sharingJob.cancel()
         finish(5 + n + replayOfs)
+    }
+
+    @Test
+    fun testUpstreamCompletedReset() =
+        testUpstreamCompletedOrFailedReset(failed = false)
+
+    @Test
+    fun testUpstreamFailedReset() =
+        testUpstreamCompletedOrFailedReset(failed = true)
+
+    private fun testUpstreamCompletedOrFailedReset(failed: Boolean) = runTest {
+        val emitted = Job()
+        val terminate = Job()
+        val sharingJob = CompletableDeferred<Unit>()
+        val upstream = flow {
+            emit("OK")
+            emitted.complete()
+            terminate.join()
+            if (failed) throw TestException()
+        }
+        val shared = upstream.shareIn(this + sharingJob, 1)
+        assertEquals(emptyList(), shared.replayCache)
+        emitted.join() // should start sharing, emit & cache
+        assertEquals(listOf("OK"), shared.replayCache)
+        terminate.complete()
+        sharingJob.complete(Unit)
+        sharingJob.join() // should complete sharing & reset cache
+        assertEquals(emptyList(), shared.replayCache)
+        if (failed) {
+            assertTrue(sharingJob.getCompletionExceptionOrNull() is TestException)
+        } else {
+            assertNull(sharingJob.getCompletionExceptionOrNull())
+        }
     }
 
     @Test
